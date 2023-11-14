@@ -6,24 +6,7 @@
  */
 
 import React, {useCallback, useMemo, useState} from 'react';
-import {
-  Button,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {SafeAreaView, StatusBar, StyleSheet} from 'react-native';
 import MainContainer from './components/Main';
 import Field from './components/Field';
 

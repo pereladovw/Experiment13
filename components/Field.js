@@ -12,7 +12,7 @@ const snapshotR = scale(90);
 const snapshotWidth = snapshotR * 2 + itemD;
 const rToSnapshot = scale(500);
 
-const practiceTrialsNumber = 3;
+const practiceTrialsNumber = 5;
 const trialsNumber = 180;
 
 const BLOCKS = [
