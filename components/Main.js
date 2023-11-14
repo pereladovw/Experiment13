@@ -6,8 +6,9 @@ import {
   TextInput,
   KeyboardAvoidingView,
 } from 'react-native';
+import moment from 'moment';
 
-const MainContainer = ({saveNewParticipant}) => {
+const MainContainer = ({saveNewParticipant, isDataSaved}) => {
   const [number, setNumber] = useState('');
   const [sessionNumber, setSessionNumber] = useState('');
   const [gender, setGender] = useState('');
@@ -43,7 +44,15 @@ const MainContainer = ({saveNewParticipant}) => {
       <Button
         title="New Participant"
         color={'white'}
-        onPress={() => saveNewParticipant({number, sessionNumber, gender, age})}
+        onPress={() =>
+          saveNewParticipant([
+            number,
+            sessionNumber,
+            gender,
+            age,
+            moment().format(),
+          ])
+        }
       />
     </KeyboardAvoidingView>
   );

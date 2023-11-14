@@ -13,7 +13,7 @@ const snapshotWidth = snapshotR * 2 + itemD;
 const rToSnapshot = scale(500);
 
 const practiceTrialsNumber = 5;
-const trialsNumber = 180;
+const trialsNumber = 110;
 
 const BLOCKS = [
   {
@@ -21,48 +21,56 @@ const BLOCKS = [
     distNumber: 4,
     targets: ['redCircle', 'greenSquare'],
     distractors: ['greenCircle', 'redSquare'],
+    type: 'conj',
   },
   {
     condition: 2,
     distNumber: 4,
     targets: ['greenCircle', 'redSquare'],
     distractors: ['redCircle', 'greenSquare'],
+    type: 'conj',
   },
   {
     condition: 3,
     distNumber: 4,
     targets: ['yellowCircle', 'blueCircle'],
     distractors: ['greenCircle', 'redCircle'],
+    type: 'feat',
   },
   {
     condition: 4,
     distNumber: 4,
     targets: ['greenCircle', 'redCircle'],
     distractors: ['yellowCircle', 'blueCircle'],
+    type: 'feat',
   },
   {
     condition: 5,
     distNumber: 6,
     targets: ['redCircle', 'greenSquare'],
     distractors: ['greenCircle', 'redSquare'],
+    type: 'conj',
   },
   {
     condition: 6,
     distNumber: 6,
     targets: ['greenCircle', 'redSquare'],
     distractors: ['redCircle', 'greenSquare'],
+    type: 'conj',
   },
   {
     condition: 7,
     distNumber: 6,
     targets: ['yellowCircle', 'blueCircle'],
     distractors: ['greenCircle', 'redCircle'],
+    type: 'feat',
   },
   {
     condition: 8,
     distNumber: 6,
     targets: ['greenCircle', 'redCircle'],
     distractors: ['yellowCircle', 'blueCircle'],
+    type: 'feat',
   },
 ];
 
@@ -111,10 +119,10 @@ function shuffle(array) {
 
 let startTime = new Date().getTime();
 
-const trialData = [];
+let trialData = [];
 let trialTime = new Date().getTime();
 
-const Field = ({onFinish}) => {
+const Field = ({onFinish, saveStep}) => {
   const [trial, setTrial] = useState(-1);
   const [blocks, setBlocks] = useState(shuffle([...BLOCKS]));
   const [block, setBlock] = useState(null);
@@ -124,6 +132,7 @@ const Field = ({onFinish}) => {
   const [pause, setPause] = useState(false);
   const [practiceData, setPracticeData] = useState(null);
   const [practice, setPractice] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(false);
 
   useEffect(() => {
     if (!pause) {
@@ -160,37 +169,8 @@ const Field = ({onFinish}) => {
     }, 500);
   }, [setPause, setTrial, trial]);
 
-  const onSnapshotPress = useCallback(
-    itemIndex => {
-      if (trial >= 0) {
-        const data = {
-          blockNumber,
-          blockType: block.condition,
-          trial: trial + 1,
-          pressedPosition: itemIndex,
-          timeForSeletion: new Date().getTime() - trialTime,
-          target1: block.targets[0],
-          target2: block.targets[1],
-          position1: centerItems[0],
-          position2: centerItems[1],
-          position3: centerItems[2],
-          position4: centerItems[3],
-          position5: centerItems[4],
-          position6: centerItems[5],
-          position7: centerItems[6],
-          position8: centerItems[7],
-          distractor1: aroundDistractorItems[0],
-          distractor2: aroundDistractorItems[1],
-          distractor3: aroundDistractorItems[2],
-          distractor4: aroundDistractorItems[3],
-          distractor5: aroundDistractorItems[4],
-          distractor6: aroundDistractorItems[5],
-          distractor7: aroundDistractorItems[6],
-          distractor8: aroundDistractorItems[7],
-          targetSelected: block.targets.includes(centerItems[itemIndex]),
-        };
-        trialData.push(data);
-      }
+  const onStepEnd = useCallback(
+    (resultData, totalTime) => {
       const maxTrials = practice ? practiceTrialsNumber : trialsNumber;
       if (trial < maxTrials - 1) {
         onNextStep();
@@ -200,33 +180,75 @@ const Field = ({onFinish}) => {
         nextBlock();
         return;
       }
-      const totalTime = new Date().getTime() - startTime;
       if (practice) {
-        setPracticeData(trialData);
+        setPracticeData(resultData);
         setBlocks(shuffle([...BLOCKS]));
         setBlock(null);
         setPause(false);
         setIsStarted(false);
-        setBlockNumber(1);
+        setBlockNumber(0);
         setIsNewBlock(false);
         setPractice(false);
         setTrial(-1);
       } else {
-        onFinish({totalTime, trialData});
+        onFinish({totalTime, trialData: resultData});
+      }
+      trialData = [];
+    },
+    [onNextStep, onFinish, blocks, nextBlock, practice, trial],
+  );
+
+  const onSnapshotPress = useCallback(
+    itemIndex => {
+      if (trial >= 0) {
+        const items = {};
+        let distrCounter = 0;
+        centerItems.forEach((i, index) => {
+          switch (i) {
+            case block.targets[0]:
+              items.target1 = block.targets[0];
+              items.target1_pos = index;
+              items.dist_target1 = aroundDistractorItems[index];
+              break;
+            case block.targets[1]:
+              items.target2 = block.targets[1];
+              items.target2_pos = index;
+              items.dist_target2 = aroundDistractorItems[index];
+              break;
+            default:
+              distrCounter++;
+              items[`dist${distrCounter}`] = i;
+              items[`dist${distrCounter}_pos`] = index;
+              items[`dist_dist${distrCounter}`] = aroundDistractorItems[index];
+              break;
+          }
+        });
+        const data = {
+          blockNumber,
+          blockType: block.condition,
+          condition: block.type,
+          trial: trial + 1,
+          nDistAround: block.distNumber,
+          pressedPosition: itemIndex,
+          timeForSeletion: new Date().getTime() - trialTime,
+          typeSelected: centerItems[itemIndex],
+          ...items,
+          targetSelected: block.targets.includes(centerItems[itemIndex]),
+        };
+        trialData.push(data);
+      }
+      const totalTime = new Date().getTime() - startTime;
+      if (trial >= 0 && !block.targets.includes(centerItems[itemIndex])) {
+        setErrorMessage(true);
+        setTimeout(() => {
+          setErrorMessage(false);
+          onStepEnd(trialData, totalTime);
+        }, 300);
+      } else {
+        onStepEnd(trialData, totalTime);
       }
     },
-    [
-      onNextStep,
-      trial,
-      onFinish,
-      nextBlock,
-      blocks,
-      blockNumber,
-      centerItems,
-      block,
-      practice,
-      aroundDistractorItems,
-    ],
+    [onStepEnd, trial, block, blockNumber, centerItems, aroundDistractorItems],
   );
 
   const centerItems = useMemo(
@@ -265,7 +287,7 @@ const Field = ({onFinish}) => {
         result.time += a.timeForSeletion;
         a.targetSelected ? result.correct++ : result.incorrect++;
       });
-      result.commonTime = result.time / practiceData.length;
+      result.commonTime = (result.time / practiceData.length).toFixed(2);
       return result;
     } else {
       return null;
@@ -287,6 +309,14 @@ const Field = ({onFinish}) => {
       onPress={() => onSnapshotPress(index)}
     />
   ));
+
+  if (errorMessage) {
+    return (
+      <View style={styles.mainContainer}>
+        <Text style={styles.text}>Wrong answer!</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.mainContainer}>
