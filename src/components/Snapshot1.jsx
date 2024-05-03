@@ -1,13 +1,12 @@
 import React, {useMemo} from 'react';
 import {StyleSheet, View, TouchableWithoutFeedback} from 'react-native';
 
-const Snapshot = ({
+const Snapshot1 = ({
   x,
   y,
   width,
   distractor,
   centerItem,
-  number,
   index,
   r,
   itemD,
@@ -15,23 +14,15 @@ const Snapshot = ({
 }) => {
   const center = useMemo(() => width / 2, [width]);
   const coords = useMemo(
-    () =>
-      number === 4
-        ? [
-            {x: center + r, y: center},
-            {x: center, y: center + r},
-            {x: center - r, y: center},
-            {x: center, y: center - r},
-          ]
-        : [
-            {x: center + r, y: center},
-            {x: center + r / 2, y: center + (r * Math.sqrt(3)) / 2},
-            {x: center - r / 2, y: center + (r * Math.sqrt(3)) / 2},
-            {x: center - r, y: center},
-            {x: center - r / 2, y: center - (r * Math.sqrt(3)) / 2},
-            {x: center + r / 2, y: center - (r * Math.sqrt(3)) / 2},
-          ],
-    [number, center, r],
+    () => [
+      {x: center + r, y: center},
+      {x: center + r / 2, y: center + (r * Math.sqrt(3)) / 2},
+      {x: center - r / 2, y: center + (r * Math.sqrt(3)) / 2},
+      {x: center - r, y: center},
+      {x: center - r / 2, y: center - (r * Math.sqrt(3)) / 2},
+      {x: center + r / 2, y: center - (r * Math.sqrt(3)) / 2},
+    ],
+    [center, r],
   );
   const items = coords.map(c => (
     <View
@@ -104,4 +95,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Snapshot;
+export default Snapshot1;

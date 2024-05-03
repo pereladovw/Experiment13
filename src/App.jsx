@@ -1,13 +1,17 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {SafeAreaView, StatusBar, StyleSheet} from 'react-native';
 import RNFetchBlob from 'rn-fetch-blob';
-import MainContainer from './components/Main';
-import EndScreen from './components/EndScreen';
-import Field from './components/Field';
 import moment from 'moment';
 
+import EndScreen from './components/EndScreen';
+import ExperimentOne from './components/ExperimentOne';
+import ExperimentTwo from './components/ExperimentTwo';
+import NewParticipant from './components/NewParticipant';
+import ExperimentSelect from './components/ExperimentSelect';
+import {STAGES} from './constants';
+
 const headerString =
-  'block_n,trial_n,block_type,condition,n_dist_around,' +
+  'block_n,trial_n,block_type,obj_around,condition,' +
   'target1,target1_pos,dist_target1,' +
   'target2,target2_pos,dist_target2,' +
   'dist1,dist1_pos,dist_dist1,' +
@@ -17,11 +21,10 @@ const headerString =
   'dist5,dist5_pos,dist_dist5,' +
   'dist6,dist6_pos,dist_dist6,' +
   'target_selected,pressed_position,type_selected,switch,selection_time,' +
-  'participant,session,gender,age,date\n';
+  'participant,gender,age,date\n';
 
 const DEFAULT_PARTICIPANT = {
   number: '',
-  sessionNumber: '',
   gender: '',
   age: '',
 };
@@ -30,13 +33,13 @@ console.disableYellowBox = true;
 
 function App() {
   const [participant, setParticipant] = useState(DEFAULT_PARTICIPANT);
-  const [stage, setStage] = useState(0);
+  const [stage, setStage] = useState(STAGES.NEW_PURTICIPANT);
   const [resultData, setResultData] = useState(0);
 
   const saveNewParticipant = useCallback(
     newParticipant => {
       setParticipant(newParticipant);
-      setStage(1);
+      setStage(STAGES.EXP_SELECT);
     },
     [setStage, setParticipant],
   );
@@ -50,9 +53,9 @@ function App() {
   //   [participant],
   // );
 
-  const onExamFinish = useCallback(
+  const onExamOneFinish = useCallback(
     data => {
-      const pathToWrite = `${RNFetchBlob.fs.dirs.DocumentDir}/participant${
+      const pathToWrite = `${RNFetchBlob.fs.dirs.DocumentDir}/exp1_participant${
         participant[0]
       }_${moment().format('DD_MM_YY_hh_mm')}.csv`;
       let saveData = headerString;
@@ -71,7 +74,7 @@ function App() {
         }
 
         let result =
-          `${i.blockNumber},${i.trial},${i.blockType},${i.condition},${i.nDistAround},` +
+          `${i.blockNumber},${i.trial},${i.blockType},${i.surObj},${i.condition},` +
           `${i.target1},${i.target1_pos},${i.dist_target1},` +
           `${i.target2},${i.target2_pos},${i.dist_target2},` +
           `${i.dist1},${i.dist1_pos},${i.dist_dist1},` +
@@ -90,7 +93,7 @@ function App() {
       RNFetchBlob.fs
         .writeFile(pathToWrite, saveData, 'utf8')
         .then(() => {
-          setStage(2);
+          setStage(STAGES.END_SCREEN);
         })
         .catch(error => console.error(error));
       const _resultData = {
@@ -111,18 +114,93 @@ function App() {
     [participant],
   );
 
+  const onExamTwoFinish = useCallback(
+    data => {
+      const pathToWrite = `${RNFetchBlob.fs.dirs.DocumentDir}/exp2_participant${
+        participant[0]
+      }_${moment().format('DD_MM_YY_hh_mm')}.csv`;
+      let saveData = headerString;
+      data.trialData.forEach((i, index, arr) => {
+        let _switch = 0;
+        if (index > 0) {
+          const prevItem = arr[index - 1];
+          if (
+            i.trial !== 1 &&
+            index > 0 &&
+            i.blockNumber === prevItem.blockNumber &&
+            i.typeSelected !== prevItem.typeSelected
+          ) {
+            _switch = i.targetSelected ? 1 : 2;
+          }
+        }
+
+        let result =
+          `${i.blockNumber},${i.trial},${i.blockType},${i.surObj},${i.condition},` +
+          `${i.target1},${i.target1_pos},${i.dist_target1},` +
+          `${i.target2},${i.target2_pos},${i.dist_target2},` +
+          `${i.dist1},${i.dist1_pos},${i.dist_dist1},` +
+          `${i.dist2},${i.dist2_pos},${i.dist_dist2},` +
+          `${i.dist3},${i.dist3_pos},${i.dist_dist3},` +
+          `${i.dist4},${i.dist4_pos},${i.dist_dist4},` +
+          `${i.dist5},${i.dist5_pos},${i.dist_dist5},` +
+          `${i.dist6},${i.dist6_pos},${i.dist_dist6},` +
+          `${i.targetSelected},${i.pressedPosition},${
+            i.typeSelected
+          },${_switch},${i.timeForSeletion / 1000},`;
+        result += participant.map(v => v + ',').join('');
+        result = result.replace(/.$/, '\n');
+        saveData += result;
+      });
+      RNFetchBlob.fs
+        .writeFile(pathToWrite, saveData, 'utf8')
+        .then(() => {
+          setStage(STAGES.END_SCREEN);
+        })
+        .catch(error => console.error(error));
+      const _resultData = {
+        correct: 0,
+        incorrect: 0,
+        time: 0,
+        totalTime: data.totalTime,
+      };
+      data.trialData.forEach(a => {
+        _resultData.time += a.timeForSeletion;
+        a.targetSelected ? _resultData.correct++ : _resultData.incorrect++;
+      });
+      _resultData.commonTime = (
+        _resultData.time / data.trialData.length
+      ).toFixed(2);
+      setResultData(_resultData);
+    },
+    [participant],
+  );
+
+  const selectNewParticipant = () => {
+    setParticipant(DEFAULT_PARTICIPANT);
+    setStage(STAGES.NEW_PURTICIPANT);
+  };
+
   const screen = useMemo(() => {
     switch (stage) {
-      case 0:
-        return <MainContainer saveNewParticipant={saveNewParticipant} />;
-      case 1:
-        return <Field onFinish={onExamFinish} />;
-      case 2:
+      case STAGES.NEW_PURTICIPANT:
+        return <NewParticipant saveNewParticipant={saveNewParticipant} />;
+      case STAGES.EXP_SELECT:
+        return (
+          <ExperimentSelect
+            selectExperiment={setStage}
+            selectNewParticipant={selectNewParticipant}
+          />
+        );
+      case STAGES.EXP_ONE:
+        return <ExperimentOne onFinish={onExamOneFinish} />;
+      case STAGES.EXP_TWO:
+        return <ExperimentTwo onFinish={onExamTwoFinish} />;
+      case STAGES.END_SCREEN:
         return (
           <EndScreen
             nextStep={() => {
-              setParticipant(DEFAULT_PARTICIPANT);
-              setStage(0);
+              // setParticipant(DEFAULT_PARTICIPANT);
+              setStage(STAGES.EXP_SELECT);
             }}
             resultData={resultData}
           />
@@ -130,7 +208,7 @@ function App() {
       default:
         break;
     }
-  }, [saveNewParticipant, onExamFinish, stage, resultData]);
+  }, [saveNewParticipant, onExamOneFinish, onExamTwoFinish, stage, resultData]);
 
   return (
     <SafeAreaView style={[styles.mainContainer]}>

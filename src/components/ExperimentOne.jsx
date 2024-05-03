@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {Button, StyleSheet, View, Text, Dimensions} from 'react-native';
-import Snapshot from './Snapshot';
+import Snapshot1 from './Snapshot1';
 import Preview from './Preview';
 
 const {height, width, scale: screenScale} = Dimensions.get('screen');
@@ -12,65 +12,121 @@ const snapshotR = scale(90);
 const snapshotWidth = snapshotR * 2 + itemD;
 const rToSnapshot = scale(500);
 
-const practiceTrialsNumber = 5;
-const trialsNumber = 110;
+const practiceTrialsNumber = 4;
+const trialsNumber = 45;
 
 const BLOCKS = [
   {
     condition: 1,
-    distNumber: 4,
-    targets: ['redCircle', 'greenSquare'],
-    distractors: ['greenCircle', 'redSquare'],
-    type: 'conj',
+    targets: ['yellowCircle', 'blueCircle'],
+    distractors: ['greenCircle', 'redCircle'],
+    targetDistr: [],
+    type: 'feat',
   },
   {
     condition: 2,
-    distNumber: 4,
-    targets: ['greenCircle', 'redSquare'],
-    distractors: ['redCircle', 'greenSquare'],
-    type: 'conj',
+    targets: ['yellowCircle', 'blueCircle'],
+    distractors: ['greenCircle', 'redCircle'],
+    targetDistr: ['yellowCircle'],
+    type: 'feat',
   },
   {
     condition: 3,
-    distNumber: 4,
     targets: ['yellowCircle', 'blueCircle'],
     distractors: ['greenCircle', 'redCircle'],
+    targetDistr: ['blueCircle'],
     type: 'feat',
   },
   {
     condition: 4,
-    distNumber: 4,
-    targets: ['greenCircle', 'redCircle'],
-    distractors: ['yellowCircle', 'blueCircle'],
+    targets: ['yellowCircle', 'blueCircle'],
+    distractors: ['greenCircle', 'redCircle'],
+    targetDistr: ['yellowCircle', 'blueCircle'],
     type: 'feat',
   },
   {
     condition: 5,
-    distNumber: 6,
-    targets: ['redCircle', 'greenSquare'],
-    distractors: ['greenCircle', 'redSquare'],
-    type: 'conj',
+    targets: ['greenCircle', 'redCircle'],
+    distractors: ['yellowCircle', 'blueCircle'],
+    targetDistr: [],
+    type: 'feat',
   },
   {
     condition: 6,
-    distNumber: 6,
-    targets: ['greenCircle', 'redSquare'],
-    distractors: ['redCircle', 'greenSquare'],
-    type: 'conj',
+    targets: ['greenCircle', 'redCircle'],
+    distractors: ['yellowCircle', 'blueCircle'],
+    targetDistr: ['greenCircle'],
+    type: 'feat',
   },
   {
     condition: 7,
-    distNumber: 6,
-    targets: ['yellowCircle', 'blueCircle'],
-    distractors: ['greenCircle', 'redCircle'],
+    targets: ['greenCircle', 'redCircle'],
+    distractors: ['yellowCircle', 'blueCircle'],
+    targetDistr: ['redCircle'],
     type: 'feat',
   },
   {
     condition: 8,
-    distNumber: 6,
     targets: ['greenCircle', 'redCircle'],
     distractors: ['yellowCircle', 'blueCircle'],
+    targetDistr: ['greenCircle', 'redCircle'],
     type: 'feat',
+  },
+  {
+    condition: 9,
+    targets: ['greenCircle', 'redSquare'],
+    distractors: ['redCircle', 'greenSquare'],
+    targetDistr: [],
+    type: 'conj',
+  },
+  {
+    condition: 10,
+    targets: ['greenCircle', 'redSquare'],
+    distractors: ['redCircle', 'greenSquare'],
+    targetDistr: ['greenCircle'],
+    type: 'conj',
+  },
+  {
+    condition: 11,
+    targets: ['greenCircle', 'redSquare'],
+    distractors: ['redCircle', 'greenSquare'],
+    targetDistr: ['redSquare'],
+    type: 'conj',
+  },
+  {
+    condition: 12,
+    targets: ['greenCircle', 'redSquare'],
+    distractors: ['redCircle', 'greenSquare'],
+    targetDistr: ['greenCircle', 'redSquare'],
+    type: 'conj',
+  },
+  {
+    condition: 13,
+    targets: ['redCircle', 'greenSquare'],
+    distractors: ['greenCircle', 'redSquare'],
+    targetDistr: [],
+    type: 'conj',
+  },
+  {
+    condition: 14,
+    targets: ['redCircle', 'greenSquare'],
+    distractors: ['greenCircle', 'redSquare'],
+    targetDistr: ['redCircle'],
+    type: 'conj',
+  },
+  {
+    condition: 15,
+    targets: ['redCircle', 'greenSquare'],
+    distractors: ['greenCircle', 'redSquare'],
+    targetDistr: ['greenSquare'],
+    type: 'conj',
+  },
+  {
+    condition: 16,
+    targets: ['redCircle', 'greenSquare'],
+    distractors: ['greenCircle', 'redSquare'],
+    targetDistr: ['redCircle', 'greenSquare'],
+    type: 'conj',
   },
 ];
 
@@ -122,7 +178,7 @@ let startTime = new Date().getTime();
 let trialData = [];
 let trialTime = new Date().getTime();
 
-const Field = ({onFinish, saveStep}) => {
+const ExperimentOne = ({onFinish, saveStep}) => {
   const [trial, setTrial] = useState(-1);
   const [blocks, setBlocks] = useState(shuffle([...BLOCKS]));
   const [block, setBlock] = useState(null);
@@ -226,9 +282,14 @@ const Field = ({onFinish, saveStep}) => {
         const data = {
           blockNumber,
           blockType: block.condition,
+          surObj:
+            block.targetDistr.length > 0
+              ? block.targetDistr.length === 2
+                ? 'both'
+                : block.targetDistr[0]
+              : 'dist',
           condition: block.type,
           trial: trial + 1,
-          nDistAround: block.distNumber,
           pressedPosition: itemIndex,
           timeForSeletion: new Date().getTime() - trialTime,
           typeSelected: centerItems[itemIndex],
@@ -263,20 +324,29 @@ const Field = ({onFinish, saveStep}) => {
         block?.distractors[Math.round(Math.random())],
         block?.distractors[Math.round(Math.random())],
       ]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [block, trial],
   );
 
   const aroundDistractorItems = useMemo(
-    () => [
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-      block?.distractors[Math.round(Math.random())],
-    ],
+    () => {
+      if (!block?.distractors) {
+        return [];
+      }
+      const _distractors = [...block?.distractors, ...block?.targetDistr];
+      const result = [
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+        _distractors[Math.floor(Math.random() * _distractors.length)],
+      ];
+      return result;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [block, trial],
   );
 
@@ -295,7 +365,7 @@ const Field = ({onFinish, saveStep}) => {
   }, [practiceData]);
 
   const snapshots = snapshotCenters.map((s, index) => (
-    <Snapshot
+    <Snapshot1
       key={'yx' + s.y + s.x}
       index={index}
       y={s.y - snapshotWidth / 2}
@@ -303,7 +373,6 @@ const Field = ({onFinish, saveStep}) => {
       width={snapshotWidth}
       r={snapshotR}
       itemD={itemD}
-      number={block?.distNumber}
       distractor={aroundDistractorItems[index]}
       centerItem={centerItems[index]}
       onPress={() => onSnapshotPress(index)}
@@ -352,13 +421,6 @@ const Field = ({onFinish, saveStep}) => {
               onPress={() => onStart(false)}
             />
           </View>
-          {/* <View style={styles.button}>
-            <Button
-              title={'New Participant'}
-              color={'white'}
-              onPress={onNewParticipant}
-            />
-          </View> */}
         </View>
       )}
       <Text style={styles.centerCross}>+</Text>
@@ -409,4 +471,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Field;
+export default ExperimentOne;
